@@ -1,19 +1,638 @@
-export default {
-  async fetch(request, env, ctx) {
-    const url = new URL(request.url);
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TikSave & TikPost - Premium Tool</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: #0b0f19;
+        }
+        .tiktok-gradient {
+            background: linear-gradient(135deg, #00f2fe 0%, #4facfe 100%);
+        }
+        .tiktok-btn-gradient {
+            background: linear-gradient(90deg, #ff0050 0%, #00f2fe 100%);
+        }
+        .glass {
+            background: rgba(17, 24, 39, 0.7);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.02);
+            border-radius: 8px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+        /* Custom date picker styling */
+        input[type="date"]::-webkit-calendar-picker-indicator,
+        input[type="datetime-local"]::-webkit-calendar-picker-indicator {
+            filter: invert(1);
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body class="text-gray-100 min-h-screen flex flex-col justify-between">
 
-    // 1. PASTIKAN RUTE INI ADA DAN COCOK!
-    if (url.pathname === '/api/tiktok/login') {
-      const redirectOrigin = url.searchParams.get('redirect_origin');
-      
-      // Logika untuk melempar user ke TikTok OAuth
-      const clientKey = env.TIKTOK_CLIENT_KEY;
-      const tiktokAuthUrl = `https://www.tiktok.com/v2/auth/authorize/...`; 
-      
-      return Response.redirect(tiktokAuthUrl, 302);
-    }
+    <!-- Header Navigation -->
+    <header class="glass sticky top-0 z-50 px-6 py-4 border-b border-gray-800">
+        <div class="max-w-6xl mx-auto flex justify-between items-center">
+            <div class="flex items-center space-x-3">
+                <div class="p-2.5 bg-gradient-to-tr from-pink-600 to-cyan-500 rounded-xl flex items-center justify-center shadow-lg shadow-pink-500/20">
+                    <i data-lucide="zap" class="w-6 h-6 text-white"></i>
+                </div>
+                <div>
+                    <span class="text-xl font-extrabold tracking-tight bg-gradient-to-r from-white via-gray-200 to-pink-500 bg-clip-text text-transparent">TikSuite</span>
+                    <span class="text-xs block text-cyan-400 font-semibold tracking-wider uppercase">Download & Post Automation</span>
+                </div>
+            </div>
+            
+            <!-- Main Module Switcher Menu -->
+            <nav class="flex items-center space-x-2 bg-gray-950 p-1 rounded-xl border border-gray-800">
+                <button onclick="switchModule('download-mode')" id="navDownloadBtn" class="px-4 py-2 text-xs font-bold rounded-lg bg-pink-600 text-white transition-all flex items-center space-x-1.5">
+                    <i data-lucide="download" class="w-3.5 h-3.5"></i>
+                    <span>Downloader</span>
+                </button>
+                <button onclick="switchModule('upload-mode')" id="navUploadBtn" class="px-4 py-2 text-xs font-bold rounded-lg text-gray-400 hover:text-white transition-all flex items-center space-x-1.5">
+                    <i data-lucide="upload-cloud" class="w-3.5 h-3.5"></i>
+                    <span>TikPost (Uploader)</span>
+                </button>
+            </nav>
 
-    // Jika rute tidak ditemukan, ia akan melempar 404 (Ini yang memicu error di gambar Anda)
-    return new Response('Not Found', { status: 404 });
-  }
-}
+            <div class="hidden sm:flex items-center space-x-3">
+                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-500/10 text-green-400 border border-green-500/20">
+                    <span class="w-1.5 h-1.5 mr-1.5 bg-green-400 rounded-full animate-pulse"></span>
+                    System Active
+                </span>
+            </div>
+        </div>
+    </header>
+
+    <!-- MODULE 1: DOWNLOADER -->
+    <main id="downloaderModule" class="flex-grow max-w-6xl w-full mx-auto px-4 py-8 md:py-12 pb-32">
+        
+        <!-- Hero Section -->
+        <div class="text-center mb-8">
+            <h1 class="text-3xl md:text-5xl font-extrabold mb-3 tracking-tight leading-none">
+                Download Video TikTok <br class="hidden md:block"> 
+                <span class="bg-gradient-to-r from-pink-500 via-purple-400 to-cyan-400 bg-clip-text text-transparent">Tanpa Watermark</span>
+            </h1>
+            <p class="text-gray-400 text-sm md:text-base max-w-xl mx-auto">
+                Unduh video tunggal, daftar tautan massal, atau langsung <b>jelajahi semua video berdasarkan Username</b> dengan pilihan seleksi video interaktif secara massal.
+            </p>
+        </div>
+
+        <!-- Downloader Container with Tabs -->
+        <div id="downloader" class="glass rounded-3xl p-6 md:p-8 shadow-2xl relative overflow-hidden mb-8">
+            <div class="absolute -top-12 -left-12 w-32 h-32 bg-pink-500 rounded-full blur-3xl opacity-15"></div>
+            <div class="absolute -bottom-12 -right-12 w-32 h-32 bg-cyan-500 rounded-full blur-3xl opacity-15"></div>
+
+            <div class="flex flex-wrap border-b border-gray-800/80 mb-6 relative z-10 gap-y-2">
+                <button onclick="switchTab('single')" id="tabSingleBtn" class="flex-1 min-w-[120px] pb-3 text-center font-bold text-sm border-b-2 border-pink-500 text-pink-500 transition-all flex items-center justify-center space-x-2">
+                    <i data-lucide="video" class="w-4 h-4"></i>
+                    <span>Tunggal</span>
+                </button>
+                <button onclick="switchTab('batch')" id="tabBatchBtn" class="flex-1 min-w-[120px] pb-3 text-center font-bold text-sm border-b-2 border-transparent text-gray-400 hover:text-gray-200 transition-all flex items-center justify-center space-x-2">
+                    <i data-lucide="layers" class="w-4 h-4"></i>
+                    <span>Banyak (Batch)</span>
+                </button>
+                <button onclick="switchTab('username')" id="tabUsernameBtn" class="flex-1 min-w-[120px] pb-3 text-center font-bold text-sm border-b-2 border-transparent text-gray-400 hover:text-gray-200 transition-all flex items-center justify-center space-x-2">
+                    <i data-lucide="user" class="w-4 h-4"></i>
+                    <span>Cari Username</span>
+                </button>
+            </div>
+
+            <!-- TAB 1: Single Link Downloader -->
+            <div id="tabSingleContent" class="relative z-10">
+                <div class="flex flex-col md:flex-row gap-3">
+                    <div class="relative flex-grow">
+                        <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-500">
+                            <i data-lucide="link-2" class="w-5 h-5"></i>
+                        </div>
+                        <input type="text" id="tiktokUrl" placeholder="Tempel URL Video (https://...) atau masukkan ID Video saja" class="w-full pl-12 pr-12 py-4 bg-gray-900/80 border border-gray-700/60 rounded-2xl text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-all text-sm md:text-base">
+                        <button onclick="clearSingleInput()" id="clearBtn" class="absolute inset-y-0 right-0 pr-4 flex items-center text-gray-500 hover:text-white hidden">
+                            <i data-lucide="x" class="w-5 h-5"></i>
+                        </button>
+                    </div>
+                    <button onclick="processSingleVideo()" class="tiktok-btn-gradient hover:opacity-90 text-white font-bold py-4 px-8 rounded-2xl flex items-center justify-center space-x-2 shadow-lg shadow-pink-500/15 transition-all transform hover:scale-[1.02] active:scale-[0.98]">
+                        <i data-lucide="search" class="w-5 h-5"></i>
+                        <span>Proses Video</span>
+                    </button>
+                </div>
+                <div class="mt-3 flex justify-between items-center px-1">
+                    <p class="text-xs text-gray-500">Mendukung link vt.tiktok, tiktok.com, maupun ID Video angka.</p>
+                    <button onclick="pasteToInput('tiktokUrl', 'clearBtn')" class="text-xs font-semibold text-cyan-400 hover:text-cyan-300 flex items-center space-x-1">
+                        <i data-lucide="clipboard" class="w-3.5 h-3.5"></i>
+                        <span>Tempel Clipboard</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- TAB 2: Batch Link Downloader -->
+            <div id="tabBatchContent" class="relative z-10 hidden">
+                <p class="text-xs text-gray-400 mb-3">Masukkan beberapa tautan video atau ID video di bawah ini (Satu per baris):</p>
+                <div class="relative mb-3">
+                    <textarea id="tiktokBatchUrls" rows="6" placeholder="https://vt.tiktok.com/ZS8fxxA9/&#10;7312345678901234567&#10;https://www.tiktok.com/@user/video/73987654321" class="w-full p-4 bg-gray-900/80 border border-gray-700/60 rounded-2xl text-white placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent transition-all text-sm font-mono"></textarea>
+                    <button onclick="clearBatchInput()" id="clearBatchBtn" class="absolute top-4 right-4 text-gray-500 hover:text-white hidden">
+                        <i data-lucide="trash-2" class="w-4 h-4"></i>
+                    </button>
+                </div>
+                <div class="flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-3">
+                    <button onclick="pasteToTextarea()" class="text-xs font-semibold text-cyan-400 hover:text-cyan-300 flex items-center justify-center sm:justify-start space-x-1">
+                        <i data-lucide="clipboard" class="w-4 h-4"></i>
+                        <span>Tempel Teks Massal</span>
+                    </button>
+                    <button onclick="processBatchVideos()" class="bg-gradient-to-r from-pink-600 to-purple-600 hover:opacity-95 text-white font-bold py-3.5 px-8 rounded-2xl flex items-center justify-center space-x-2 shadow-lg transition-all transform hover:scale-[1.01] active:scale-[0.99]">
+                        <i data-lucide="play" class="w-5 h-5"></i>
+                        <span>Proses Semua Data</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- TAB 3: Username Downloader -->
+            <div id="tabUsernameContent" class="relative z-10 hidden">
+                <div class="flex flex-col md:flex-row gap-3">
+                    <div class="relative flex-grow">
+                        <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-500">
+                            <i data-lucide="user" class="w-5 h-5"></i>
+                        </div>
+                        <input type="text" id="tiktokUsername" placeholder="Masukkan Username TikTok saja (contoh: khaby.lame)" class="w-full pl-12 pr-12 py-4 bg-gray-900/80 border border-gray-700/60 rounded-2xl text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent transition-all text-sm md:text-base">
+                        <button onclick="clearUsernameInput()" id="clearUserBtn" class="absolute inset-y-0 right-0 pr-4 flex items-center text-gray-500 hover:text-white hidden">
+                            <i data-lucide="x" class="w-5 h-5"></i>
+                        </button>
+                    </div>
+                    <div class="relative min-w-[150px]">
+                        <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-cyan-400">
+                            <i data-lucide="list-ordered" class="w-4 h-4"></i>
+                        </div>
+                        <select id="usernameLimit" onchange="resetUsernamePagination()" class="w-full pl-10 pr-8 py-4 bg-gray-900/80 border border-gray-700/60 rounded-2xl text-white appearance-none focus:outline-none focus:ring-2 focus:ring-cyan-500 transition-all text-sm font-semibold cursor-pointer">
+                            <option value="10">10 Posting</option>
+                            <option value="20" selected>20 Posting</option>
+                            <option value="30">30 Posting</option>
+                            <option value="50">50 Posting</option>
+                            <option value="100">100 Posting</option>
+                        </select>
+                        <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none text-gray-500">
+                            <i data-lucide="chevron-down" class="w-4 h-4"></i>
+                        </div>
+                    </div>
+                    <button onclick="processUsernameVideos(true)" class="bg-gradient-to-r from-cyan-500 to-blue-600 hover:opacity-90 text-white font-bold py-4 px-8 rounded-2xl flex items-center justify-center space-x-2 shadow-lg shadow-cyan-500/15 transition-all transform hover:scale-[1.02] active:scale-[0.98]">
+                        <i data-lucide="search" class="w-5 h-5"></i>
+                        <span>Cari Video</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Shared Loading State -->
+            <div id="loadingState" class="hidden mt-8 text-center py-6">
+                <div class="inline-block relative w-16 h-16">
+                    <div class="absolute inset-0 rounded-full border-4 border-gray-800"></div>
+                    <div class="absolute inset-0 rounded-full border-4 border-t-pink-500 border-r-cyan-400 animate-spin"></div>
+                </div>
+                <p id="loadingMessage" class="mt-4 text-gray-300 font-medium">Menganalisis data video...</p>
+                <div id="batchProgressBarContainer" class="max-w-xs mx-auto mt-4 bg-gray-800 rounded-full h-2.5 overflow-hidden hidden">
+                    <div id="batchProgressBar" class="bg-gradient-to-r from-pink-500 to-cyan-400 h-2.5 rounded-full transition-all duration-300" style="width: 0%"></div>
+                </div>
+                <p id="batchProgressText" class="text-xs text-gray-500 mt-2 hidden">Memproses 0 dari 0 data</p>
+            </div>
+
+            <!-- Error State -->
+            <div id="errorState" class="hidden mt-6 p-4 bg-red-900/20 border border-red-500/30 rounded-2xl flex items-start space-x-3">
+                <div class="p-1 bg-red-500/20 rounded-lg text-red-400">
+                    <i data-lucide="alert-circle" class="w-5 h-5"></i>
+                </div>
+                <div>
+                    <h4 class="text-sm font-bold text-red-400">Terjadi Kesalahan</h4>
+                    <p class="text-xs text-gray-400 mt-0.5" id="errorMessage">Pastikan input Anda sudah benar.</p>
+                </div>
+            </div>
+
+            <!-- Single Result State -->
+            <div id="resultState" class="hidden mt-8 pt-8 border-t border-gray-800/80">
+                <div class="grid grid-cols-1 md:grid-cols-12 gap-6">
+                    <div class="md:col-span-5 flex flex-col items-center">
+                        <div class="relative w-full max-w-[240px] aspect-[9/16] bg-black rounded-2xl overflow-hidden shadow-2xl border border-gray-800 group">
+                            <video id="videoPreview" class="w-full h-full object-cover" controls playsinline loop crossorigin="anonymous">
+                                <source id="videoSource" src="" type="video/mp4">
+                            </video>
+                        </div>
+                    </div>
+                    <div class="md:col-span-7 flex flex-col justify-between">
+                        <div>
+                            <div class="flex items-center space-x-3 mb-4">
+                                <div class="w-12 h-12 rounded-full bg-gradient-to-tr from-pink-600 to-cyan-400 p-0.5 overflow-hidden">
+                                    <img id="creatorAvatar" src="" class="w-full h-full rounded-full object-cover">
+                                </div>
+                                <div>
+                                    <h4 id="creatorName" class="font-bold text-white text-base">@username</h4>
+                                    <p class="text-xs text-gray-400 flex items-center gap-1 mt-0.5">
+                                        <i data-lucide="calendar" class="w-3.5 h-3.5 text-cyan-400"></i>
+                                        <span id="videoPublishDate">Diposting: -</span>
+                                    </p>
+                                </div>
+                            </div>
+                            <p id="videoTitle" class="text-gray-200 text-sm leading-relaxed mb-4">Deskripsi video...</p>
+                        </div>
+                        <div class="space-y-3">
+                            <button id="downloadNoWmBtn" onclick="downloadFile(activeData, 'no-wm')" class="w-full bg-gradient-to-r from-emerald-500 to-green-600 text-white font-bold py-3.5 px-4 rounded-xl flex items-center justify-center space-x-2 shadow-lg">
+                                <i data-lucide="shield-check" class="w-5 h-5"></i>
+                                <span>Unduh Tanpa Watermark (HD)</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Batch & Username Result State -->
+            <div id="batchResultState" class="hidden mt-8 pt-8 border-t border-gray-800/80">
+                <div id="batchResultsList" class="grid gap-4 grid-cols-2 sm:grid-cols-3 md:grid-cols-4"></div>
+            </div>
+        </div>
+    </main>
+
+
+    <!-- MODULE 2: TIKPOST (UPLOADER & SCHEDULER LAYER) -->
+    <main id="uploaderModule" class="hidden flex-grow max-w-6xl w-full mx-auto px-4 py-8 md:py-12 pb-32">
+        <!-- Hero Section -->
+        <div class="text-center mb-8">
+            <h1 class="text-3xl md:text-5xl font-extrabold mb-3 tracking-tight leading-none">
+                Upload & Jadwalkan Video <br class="hidden md:block"> 
+                <span class="bg-gradient-to-r from-pink-500 via-purple-400 to-cyan-400 bg-clip-text text-transparent">Secara Massal</span>
+            </h1>
+            <p class="text-gray-400 text-sm md:text-base max-w-xl mx-auto">
+                Hubungkan akun TikTok Anda, impor banyak file sekaligus, setel caption individual, lalu jadwalkan otomatis ke sistem server.
+            </p>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+            
+            <!-- Sidebar: Authentication Status -->
+            <div class="lg:col-span-4 space-y-4">
+                <div class="glass rounded-2xl p-6 border border-gray-800 shadow-xl relative overflow-hidden">
+                    <h3 class="text-base font-bold mb-4 flex items-center space-x-2 text-white">
+                        <i data-lucide="key-round" class="w-5 h-5 text-pink-500"></i>
+                        <span>Otorisasi TikTok</span>
+                    </h3>
+                    
+                    <!-- State Belum Login -->
+                    <div id="tiktokLoggedOutState" class="space-y-4">
+                        <p class="text-xs text-gray-400 leading-relaxed">
+                            Anda harus masuk via API Resmi TikTok agar aplikasi mendapatkan izin memposting draf/video langsung ke akun Anda.
+                        </p>
+                        <button onclick="handleTikTokLoginSim()" class="w-full py-3 bg-black hover:bg-gray-900 border border-gray-800 rounded-xl text-xs font-bold flex items-center justify-center space-x-2 transition-all">
+                            <i data-lucide="log-in" class="w-4 h-4 text-pink-500"></i>
+                            <span>Login via TikTok Official</span>
+                        </button>
+                    </div>
+
+                    <!-- State Sudah Login -->
+                    <div id="tiktokLoggedInState" class="hidden space-y-4">
+                        <div class="flex items-center space-x-3 p-3 bg-gray-950/60 rounded-xl border border-gray-800">
+                            <img src="https://api.dicebear.com/7.x/bottts/svg?seed=AcepHerbal" class="w-10 h-10 rounded-full bg-pink-500 p-0.5">
+                            <div>
+                                <h4 class="text-xs font-bold text-white">Acep Herbal Official</h4>
+                                <span class="text-[10px] text-green-400 font-medium flex items-center gap-1">
+                                    <span class="w-1.5 h-1.5 bg-green-400 rounded-full animate-ping"></span> Terhubung via OAuth2
+                                </span>
+                            </div>
+                        </div>
+                        <button onclick="handleTikTokLogoutSim()" class="w-full py-2 bg-red-950/20 hover:bg-red-900/30 border border-red-900/30 rounded-xl text-[11px] font-semibold text-red-400 transition-all">
+                            Putuskan Koneksi Akun
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Scheduling Note Information -->
+                <div class="glass rounded-2xl p-5 border border-gray-800/60 bg-gray-900/20 text-xs text-gray-400 space-y-2">
+                    <p class="font-bold text-gray-300 flex items-center gap-1">
+                        <i data-lucide="info" class="w-3.5 h-3.5 text-cyan-400"></i> Informasi Penjadwalan:
+                    </p>
+                    <p>Sistem antrean ini akan mengirimkan data biner video ke endpoint database Anda. Pastikan server backend Anda mengaktifkan skrip worker cron job agar eksekusi jam publikasi berjalan akurat.</p>
+                </div>
+            </div>
+
+            <!-- Main Panel: Dropzone & Queue List -->
+            <div class="lg:col-span-8 space-y-6">
+                
+                <!-- Mass Upload Dropzone -->
+                <div class="glass rounded-3xl p-6 md:p-8 border border-dashed border-gray-700/80 hover:border-pink-500/50 text-center transition-all relative cursor-pointer group">
+                    <input type="file" id="massVideoInput" multiple accept="video/mp4,video/webm" onchange="handleMassFileSelect(event)" class="absolute inset-0 opacity-0 cursor-pointer z-20">
+                    <div class="p-4 bg-pink-500/10 rounded-2xl w-fit mx-auto mb-3 group-hover:scale-110 transition-transform text-pink-500">
+                        <i data-lucide="clapperboard" class="w-8 h-8"></i>
+                    </div>
+                    <h3 class="text-base font-bold text-white mb-1">Pilih / Seret Video Massal Di Sini</h3>
+                    <p class="text-xs text-gray-400 max-w-sm mx-auto">Mendukung banyak file video sekaligus format .mp4 atau .webm. Maksimal ukuran per video 50MB.</p>
+                </div>
+
+                <!-- Video Processing Queue Section -->
+                <div id="uploadQueueSection" class="hidden glass rounded-3xl p-6 border border-gray-800">
+                    <div class="flex justify-between items-center mb-4 border-b border-gray-800 pb-3">
+                        <div>
+                            <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                                <span id="queueCountBadge" class="bg-cyan-500 text-black text-[10px] font-extrabold px-2 py-0.5 rounded-full">0 File</span>
+                                <span>Antrean Upload Massal</span>
+                            </h3>
+                        </div>
+                        <button onclick="clearUploadQueue()" class="text-[11px] font-bold text-gray-500 hover:text-red-400 transition-colors">Hapus Antrean</button>
+                    </div>
+
+                    <!-- Dynamic Queue Container List -->
+                    <div id="uploadQueueContainer" class="space-y-4 max-h-[450px] overflow-y-auto pr-1">
+                        <!-- Content injected via JS -->
+                    </div>
+
+                    <!-- Global Execution Bar -->
+                    <div class="mt-6 pt-4 border-t border-gray-800 flex flex-col sm:flex-row gap-3 justify-between items-center">
+                        <p class="text-[11px] text-gray-400 text-center sm:text-left">Semua video di atas akan langsung diproses berurutan sesuai setting waktu.</p>
+                        <button onclick="submitMassUploadQueue()" class="w-full sm:w-auto px-6 py-3 bg-gradient-to-r from-emerald-500 to-green-600 text-white font-bold text-xs rounded-xl flex items-center justify-center space-x-1.5 shadow-lg hover:opacity-95 transition-all">
+                            <i data-lucide="send" class="w-4 h-4"></i>
+                            <span>Proses & Jadwalkan Massal</span>
+                        </button>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </main>
+
+    <!-- Global Notification Toast -->
+    <div id="toast" class="fixed bottom-6 right-6 z-50 transform translate-y-24 opacity-0 transition-all duration-300 pointer-events-none">
+        <div class="glass flex items-center space-x-3 px-4 py-3.5 rounded-2xl shadow-2xl border border-emerald-500/30">
+            <div id="toastIconContainer" class="p-1.5 bg-emerald-500/20 rounded-xl text-emerald-400">
+                <i data-lucide="check" class="w-5 h-5"></i>
+            </div>
+            <div>
+                <p id="toastMessage" class="text-sm font-bold text-white">Sukses memproses!</p>
+                <p id="toastSub" class="text-xs text-gray-400">Selesai.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="glass border-t border-gray-800/80 py-6 px-6 text-center text-xs text-gray-500">
+        <p>&copy; 2026 TikSuite Engine. Premium Creator Automation.</p>
+    </footer>
+
+    <!-- Script Application Logic -->
+    <script>
+        // Module Controller Switch
+        function switchModule(mode) {
+            const downMod = document.getElementById('downloaderModule');
+            const upMod = document.getElementById('uploaderModule');
+            const navDown = document.getElementById('navDownloadBtn');
+            const navUp = document.getElementById('navUploadBtn');
+
+            if (mode === 'download-mode') {
+                downMod.classList.remove('hidden');
+                upMod.classList.add('hidden');
+                navDown.className = "px-4 py-2 text-xs font-bold rounded-lg bg-pink-600 text-white transition-all flex items-center space-x-1.5";
+                navUp.className = "px-4 py-2 text-xs font-bold rounded-lg text-gray-400 hover:text-white transition-all flex items-center space-x-1.5";
+            } else {
+                downMod.classList.add('hidden');
+                upMod.classList.remove('hidden');
+                navDown.className = "px-4 py-2 text-xs font-bold rounded-lg text-gray-400 hover:text-white transition-all flex items-center space-x-1.5";
+                navUp.className = "px-4 py-2 text-xs font-bold rounded-lg bg-pink-600 text-white transition-all flex items-center space-x-1.5";
+            }
+        }
+
+        // TAB SWITCHER SYSTEM (Downloader Module)
+        function switchTab(tab) {
+            document.getElementById('tabSingleContent').classList.toggle('hidden', tab !== 'single');
+            document.getElementById('tabBatchContent').classList.toggle('hidden', tab !== 'batch');
+            document.getElementById('tabUsernameContent').classList.toggle('hidden', tab !== 'username');
+            
+            document.getElementById('tabSingleBtn').className = "flex-1 pb-3 text-center font-bold text-sm border-b-2 " + (tab === 'single' ? 'border-pink-500 text-pink-500' : 'border-transparent text-gray-400 hover:text-gray-200') + " transition-all flex items-center justify-center space-x-2";
+            document.getElementById('tabBatchBtn').className = "flex-1 pb-3 text-center font-bold text-sm border-b-2 " + (tab === 'batch' ? 'border-pink-500 text-pink-500' : 'border-transparent text-gray-400 hover:text-gray-200') + " transition-all flex items-center justify-center space-x-2";
+            document.getElementById('tabUsernameBtn').className = "flex-1 pb-3 text-center font-bold text-sm border-b-2 " + (tab === 'username' ? 'border-pink-500 text-pink-500' : 'border-transparent text-gray-400 hover:text-gray-200') + " transition-all flex items-center justify-center space-x-2";
+        }
+
+        // KONEKSI REAL KE CLOUDFLARE WORKER
+        function handleTikTokLoginSim() {
+            const WORKER_URL = "https://tiktokupdown.vebrirene.workers.dev";
+            
+            // Mengambil alamat url frontend saat ini secara otomatis
+            const currentOrigin = window.location.href; 
+            
+            // Melempar user ke Cloudflare Worker untuk mulai otorisasi login TikTok
+            window.location.href = `${WORKER_URL}/api/tiktok/login?redirect_origin=${encodeURIComponent(currentOrigin)}`;
+        }
+
+        function handleTikTokLogoutSim() {
+            document.getElementById('tiktokLoggedInState').classList.add('hidden');
+            document.getElementById('tiktokLoggedOutState').classList.remove('hidden');
+            showToast("Koneksi akun diputuskan.", "info");
+        }
+
+        // TIKPOST ENGINE: Queue Management Array
+        let massUploadQueue = [];
+
+        // Catching Multi-File Selection via input dropzone
+        function handleMassFileSelect(event) {
+            const files = event.target.files;
+            if (files.length === 0) return;
+
+            // Membaca file biner lokal untuk dimasukkan ke antrean render visual
+            for (let i = 0; i < files.length; i++) {
+                const file = files[i];
+                
+                // Menghindari duplikasi nama file yang sama dalam satu antrean
+                if (massUploadQueue.some(item => item.name === file.name)) continue;
+
+                // Set default auto-schedule: waktu saat ini + 1 jam ke depan per kelipatan video
+                const baseTime = new Date();
+                baseTime.setHours(baseTime.getHours() + 1 + massUploadQueue.length);
+                
+                // Mengubah format objek Date ke string lokal 'YYYY-MM-DDTHH:MM' yang dikenali oleh HTML input
+                const localDateTimeString = new Date(baseTime.getTime() - baseTime.getTimezoneOffset() * 60000)
+                                            .toISOString().slice(0, 16);
+
+                massUploadQueue.push({
+                    id: 'queue_' + Date.now() + '_' + i,
+                    fileObject: file,
+                    name: file.name,
+                    size: (file.size / (1024 * 1024)).toFixed(1) + ' MB',
+                    caption: file.name.replace(/\.[^/.]+$/, ""), // Bersihkan ekstensi untuk draf caption awal
+                    scheduledAt: localDateTimeString
+                });
+            }
+
+            renderUploadQueue();
+            // Reset input file agar dapat mendeteksi file yang sama jika di-clear lalu di-upload ulang
+            event.target.value = ''; 
+        }
+
+        // Render Antrean UI TikPost
+        function renderUploadQueue() {
+            const section = document.getElementById('uploadQueueSection');
+            const container = document.getElementById('uploadQueueContainer');
+            const badge = document.getElementById('queueCountBadge');
+
+            if (massUploadQueue.length === 0) {
+                section.classList.add('hidden');
+                container.innerHTML = '';
+                return;
+            }
+
+            section.classList.remove('hidden');
+            badge.innerText = `${massUploadQueue.length} Video`;
+            container.innerHTML = '';
+
+            massUploadQueue.forEach((item, index) => {
+                const itemDiv = document.createElement('div');
+                itemDiv.className = "p-4 bg-gray-900/50 border border-gray-800 rounded-2xl flex flex-col md:flex-row items-start md:items-center justify-between gap-4";
+                itemDiv.innerHTML = `
+                    <div class="flex items-start space-x-3 overflow-hidden flex-grow w-full md:w-auto">
+                        <div class="p-3 bg-cyan-500/10 rounded-xl text-cyan-400 flex-shrink-0 mt-1 md:mt-0">
+                            <i data-lucide="video" class="w-5 h-5"></i>
+                        </div>
+                        <div class="overflow-hidden flex-grow space-y-1">
+                            <p class="text-xs font-bold text-gray-200 truncate" title="${item.name}">${item.name}</p>
+                            <p class="text-[10px] text-gray-500 font-mono">${item.size}</p>
+                            
+                            <!-- Area Input Caption Individual -->
+                            <div class="pt-2">
+                                <label class="block text-[9px] font-bold text-pink-400 uppercase tracking-wider mb-1">Caption / Deskripsi Konten:</label>
+                                <textarea oninput="updateQueueCaption('${item.id}', this.value)" rows="2" class="w-full p-2 bg-gray-950 border border-gray-800 rounded-lg text-xs text-white placeholder-gray-600 focus:outline-none focus:border-cyan-500 transition-colors" placeholder="Tulis caption & hashtag TikTok di sini...">${item.caption}</textarea>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Area Date & Time Picker Jadwal Publikasi -->
+                    <div class="flex flex-col sm:flex-row md:flex-col items-stretch sm:items-center md:items-end gap-2 w-full md:w-auto flex-shrink-0">
+                        <div class="bg-gray-950 border border-gray-800 rounded-xl px-3 py-2 text-gray-300 relative w-full sm:w-auto">
+                            <label class="block text-[8px] font-bold text-cyan-400 uppercase tracking-wider mb-1">Jadwal Publikasi:</label>
+                            <input type="datetime-local" value="${item.scheduledAt}" onchange="updateQueueSchedule('${item.id}', this.value)" class="bg-transparent text-xs text-white focus:outline-none font-semibold cursor-pointer outline-none border-none p-0">
+                        </div>
+                        <button onclick="removeQueueItem('${item.id}')" class="p-2 bg-red-950/20 text-red-400 hover:bg-red-900/30 border border-red-900/20 rounded-xl transition-all self-end sm:self-auto flex items-center justify-center gap-1 text-[11px] font-medium px-3 sm:py-3.5 md:py-2" title="Hapus dari antrean">
+                            <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                            <span class="md:hidden">Hapus</span>
+                        </button>
+                    </div>
+                `;
+                container.appendChild(itemDiv);
+            });
+
+            lucide.createIcons();
+        }
+
+        // Sinkronisasi data caption individual ke array state global
+        function updateQueueCaption(id, value) {
+            const item = massUploadQueue.find(v => v.id === id);
+            if (item) item.caption = value;
+        }
+
+        // Sinkronisasi data tanggal individual ke array state global
+        function updateQueueSchedule(id, value) {
+            const item = massUploadQueue.find(v => v.id === id);
+            if (item) item.scheduledAt = value;
+        }
+
+        // Menghapus baris item tertentu dari antrean
+        function removeQueueItem(id) {
+            massUploadQueue = massUploadQueue.filter(item => item.id !== id);
+            renderUploadQueue();
+            showToast("Video dihapus dari antrean.", "info");
+        }
+
+        // Membersihkan seluruh isi antrean
+        function clearUploadQueue() {
+            massUploadQueue = [];
+            renderUploadQueue();
+            showToast("Antrean dikosongkan.", "info");
+        }
+
+        // Eksekusi Akhir Kirim Antrean Konten Massal ke API Backend
+        function submitMassUploadQueue() {
+            // Validasi pengecekan koneksi akun login TikTok
+            const isLoggedIn = !document.getElementById('tiktokLoggedInState').classList.contains('hidden');
+            if (!isLoggedIn) {
+                alert("Silakan lakukan otorisasi Login TikTok terlebih dahulu di sidebar kiri.");
+                return;
+            }
+
+            if (massUploadQueue.length === 0) return;
+
+            console.log("KIRIM ANTRIAN MASSAL KE ENDPOINT SERVER BACKEND:", massUploadQueue);
+            showToast(`Sukses menjadwalkan ${massUploadQueue.length} video ke sistem!`, "sukses");
+            clearUploadQueue();
+        }
+
+        // GLOBAL STUB FUNCTIONS
+        let activeData = null;
+        function clearSingleInput() { document.getElementById('tiktokUrl').value = ""; document.getElementById('clearBtn').classList.add('hidden'); }
+        function clearBatchInput() { document.getElementById('tiktokBatchUrls').value = ""; }
+        function clearUsernameInput() { document.getElementById('tiktokUsername').value = ""; }
+        function pasteToInput(id, btn) { navigator.clipboard.readText().then(t => { document.getElementById(id).value = t; document.getElementById(btn).classList.remove('hidden'); }); }
+        function pasteToTextarea() { navigator.clipboard.readText().then(t => { document.getElementById('tiktokBatchUrls').value = t; }); }
+        function processSingleVideo() { 
+            const val = document.getElementById('tiktokUrl').value;
+            if(!val) return;
+            document.getElementById('loadingState').classList.remove('hidden');
+            setTimeout(() => {
+                document.getElementById('loadingState').classList.add('hidden');
+                document.getElementById('resultState').classList.remove('hidden');
+                document.getElementById('creatorName').innerText = "@acep_herbal";
+                document.getElementById('videoTitle').innerText = val;
+            }, 1000);
+        }
+        function processBatchVideos() { alert("Simulasi memproses daftar link massal..."); }
+        function processUsernameVideos() { alert("Simulasi mencari database postingan video username..."); }
+        function resetUsernamePagination() {}
+        function downloadFile(data, type) { showToast("Memulai proses unduhan berkas...", "proses"); setTimeout(() => showToast("Unduhan selesai!", "sukses"), 1500); }
+
+        // Global Toast Notification Box
+        function showToast(message, status = "info") {
+            const toast = document.getElementById('toast');
+            const toastMsg = document.getElementById('toastMessage');
+            const toastSub = document.getElementById('toastSub');
+            const iconContainer = document.getElementById('toastIconContainer');
+            
+            toastMsg.innerText = message;
+            
+            if (status === "sukses") {
+                toastSub.innerText = "Sistem otomatisasi aktif.";
+                iconContainer.className = "p-1.5 bg-emerald-500/20 rounded-xl text-emerald-400";
+                iconContainer.innerHTML = `<i data-lucide="check" class="w-5 h-5"></i>`;
+            } else if (status === "proses") {
+                toastSub.innerText = "Mengolah data biner...";
+                iconContainer.className = "p-1.5 bg-cyan-500/20 rounded-xl text-cyan-400";
+                iconContainer.innerHTML = `<i data-lucide="loader" class="w-5 h-5 animate-spin"></i>`;
+            } else {
+                toastSub.innerText = "Pemberitahuan sistem.";
+                iconContainer.className = "p-1.5 bg-blue-500/20 rounded-xl text-blue-400";
+                iconContainer.innerHTML = `<i data-lucide="info" class="w-5 h-5"></i>`;
+            }
+            
+            lucide.createIcons();
+            toast.classList.remove('translate-y-24', 'opacity-0');
+            toast.classList.add('translate-y-0', 'opacity-100');
+
+            setTimeout(() => {
+                toast.classList.remove('translate-y-0', 'opacity-100');
+                toast.classList.add('translate-y-24', 'opacity-0');
+            }, 3500);
+        }
+
+        window.onload = function() {
+            lucide.createIcons();
+        }
+    </script>
+</body>
+</html>
