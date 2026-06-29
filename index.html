@@ -1,45 +1,19 @@
-<!DOCTYPE html>
-<html>
-<head>
-<meta charset="UTF-8">
-<title>TIKTOKUPDOWN</title>
+export default {
+  async fetch(request, env, ctx) {
+    const url = new URL(request.url);
 
-<link rel="stylesheet" href="css/style.css">
-</head>
+    // 1. PASTIKAN RUTE INI ADA DAN COCOK!
+    if (url.pathname === '/api/tiktok/login') {
+      const redirectOrigin = url.searchParams.get('redirect_origin');
+      
+      // Logika untuk melempar user ke TikTok OAuth
+      const clientKey = env.TIKTOK_CLIENT_KEY;
+      const tiktokAuthUrl = `https://www.tiktok.com/v2/auth/authorize/...`; 
+      
+      return Response.redirect(tiktokAuthUrl, 302);
+    }
 
-<body>
-
-<div class="container">
-
-<h1>TIKTOKUPDOWN</h1>
-
-<p>
-Professional TikTok Management Platform
-</p>
-
-<h2>Main Features</h2>
-
-<ul>
-<li>Bulk Video Upload</li>
-<li>Bulk Video Download</li>
-<li>Multiple TikTok Account Management</li>
-<li>Scheduling Upload</li>
-<li>Video Draft Management</li>
-</ul>
-
-<p>
-TIKTOKUPDOWN helps creators and businesses manage TikTok content more efficiently through the official TikTok API.
-</p>
-
-<hr>
-
-<a href="privacy.html">Privacy Policy</a>
-
-|
-
-<a href="terms.html">Terms of Service</a>
-
-</div>
-
-</body>
-</html>
+    // Jika rute tidak ditemukan, ia akan melempar 404 (Ini yang memicu error di gambar Anda)
+    return new Response('Not Found', { status: 404 });
+  }
+}
