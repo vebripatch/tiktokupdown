@@ -531,7 +531,7 @@
             </button>
             
             <!-- Scrolling Feed Container -->
-            <div id="modalFeedContainer" class="w-full max-w-[420px] h-[100dvh] md:h-[90vh] md:rounded-3xl overflow-y-scroll snap-y snap-mandatory relative hide-scrollbar bg-black md:border md:border-gray-800 shadow-2xl">
+            <div id="modalFeedContainer" class="w-full max-w-[420px] h-[100dvh] md:h-[90vh] md:rounded-3xl overflow-hidden relative bg-black md:border md:border-gray-800 shadow-2xl">
                 <!-- Video Slides Will Be Injected Here by JS -->
             </div>
         </div>
@@ -699,6 +699,10 @@
 
         let selectedVideos = {}; // Menyimpan objek video terpilih { videoId: videoDataObject }
         let activeUsername = "";
+
+        // MODAL NAVIGATION STATE
+        let currentModalVideoIndex = -1;
+        let isModalScrolling = false;
 
         // Terapkan library ikon
         lucide.createIcons();
@@ -1394,21 +1398,85 @@
             }
         }
 
+        // ============================================
+        // FITUR PREVIEW SCROLLING & KEYBOARD (UPDATED)
+        // ============================================
         function openVideoModal(id) {
-            const data = activeBatchResults.find(v => v.id === id);
-            if (!data) return;
+            currentModalVideoIndex = filteredBatchResults.findIndex(v => v.id === id);
+            
+            // Fallback: Jika dibuka bukan dari batch (misal search tunggal tersisa)
+            if (currentModalVideoIndex === -1) {
+                const data = activeBatchResults.find(v => v.id === id);
+                if (!data) return;
+                filteredBatchResults = [data]; 
+                currentModalVideoIndex = 0;
+            }
+            
+            renderVideoModalContent();
+
             const modal = document.getElementById('videoModal');
+            modal.classList.remove('opacity-0', 'pointer-events-none');
+            modal.classList.add('opacity-100');
+
+            // Tambahkan event listeners saat modal terbuka
+            document.addEventListener('keydown', handleModalKeydown);
+            document.getElementById('videoModal').addEventListener('wheel', handleModalScroll, { passive: false });
+        }
+
+        function renderVideoModalContent() {
+            const data = filteredBatchResults[currentModalVideoIndex];
+            if (!data) return;
+            
             document.getElementById('modalFeedContainer').innerHTML = `
-                <div class="w-full h-full snap-start relative bg-black flex items-center justify-center">
+                <div class="w-full h-full snap-start relative bg-black flex items-center justify-center transition-opacity duration-300">
                     <video src="${data.play}" class="w-full h-full object-contain" controls autoplay loop playsinline></video>
                     <div class="absolute bottom-16 left-4 right-16 z-10 text-white">
                         <h3 class="font-bold mb-1">@${data.author?.unique_id || 'user'}</h3>
                         <p class="text-xs line-clamp-2 drop-shadow-md">${data.title}</p>
                     </div>
+                    <!-- Indikator Panah Navigasi (Tengah Kanan) -->
+                    <div class="absolute right-4 top-1/2 transform -translate-y-1/2 flex flex-col gap-4 z-20">
+                        ${currentModalVideoIndex > 0 ? '<button onclick="navigateModal(-1)" class="p-2 bg-black/60 hover:bg-pink-500 rounded-full transition-all text-white/80 hover:text-white border border-white/20"><i data-lucide="chevron-up" class="w-5 h-5"></i></button>' : ''}
+                        ${currentModalVideoIndex < filteredBatchResults.length - 1 ? '<button onclick="navigateModal(1)" class="p-2 bg-black/60 hover:bg-pink-500 rounded-full transition-all text-white/80 hover:text-white border border-white/20"><i data-lucide="chevron-down" class="w-5 h-5"></i></button>' : ''}
+                    </div>
                 </div>
             `;
-            modal.classList.remove('opacity-0', 'pointer-events-none');
-            modal.classList.add('opacity-100');
+            if (window.lucide) lucide.createIcons();
+        }
+
+        function navigateModal(direction) {
+            let newIndex = currentModalVideoIndex + direction;
+            if (newIndex >= 0 && newIndex < filteredBatchResults.length) {
+                currentModalVideoIndex = newIndex;
+                renderVideoModalContent();
+            }
+        }
+
+        function handleModalKeydown(e) {
+            if (e.key === 'Escape') {
+                closeVideoModal();
+            } else if (e.key === 'ArrowUp') {
+                e.preventDefault();
+                navigateModal(-1);
+            } else if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                navigateModal(1);
+            }
+        }
+
+        function handleModalScroll(e) {
+            e.preventDefault(); // Mencegah scrolling web di latar belakang
+            if (isModalScrolling) return;
+            
+            isModalScrolling = true;
+            // Cooldown 400ms agar scrolling per video lebih halus
+            setTimeout(() => { isModalScrolling = false; }, 400); 
+
+            if (e.deltaY > 0) {
+                navigateModal(1);
+            } else if (e.deltaY < 0) {
+                navigateModal(-1);
+            }
         }
 
         function closeVideoModal() {
@@ -1416,7 +1484,12 @@
             modal.classList.add('opacity-0', 'pointer-events-none');
             modal.classList.remove('opacity-100');
             document.getElementById('modalFeedContainer').innerHTML = ""; 
+            
+            // Hapus event listeners ketika modal ditutup
+            document.removeEventListener('keydown', handleModalKeydown);
+            document.getElementById('videoModal').removeEventListener('wheel', handleModalScroll);
         }
+        // ============================================
 
         function analyzeFYP(encodedData) {
             const data = JSON.parse(decodeURIComponent(encodedData));
